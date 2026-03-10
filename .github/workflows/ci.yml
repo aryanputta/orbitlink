@@ -98,10 +98,10 @@ jobs:
         run: pip install -r packages/ml-service/requirements.txt
 
       - name: Verify Simulation
-        run: python -c "from packages.simulation.src.orbital import propagate; print('simulation OK')"
+        run: cd packages/simulation && python -c "from src.orbital import propagate; print('simulation OK')"
 
       - name: Verify ML Service
-        run: python -c "from packages.ml_service.src.predict import load_models; print('ml-service OK')"
+        run: cd packages/ml-service && python -c "from src.predict import load_models; print('ml-service OK')"
 
   docker:
     name: Docker Build

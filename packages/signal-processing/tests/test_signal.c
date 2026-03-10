@@ -28,7 +28,7 @@ void test_health_scoring(void) {
                                  .doppler_shift = 100.0,
                                  .error_rate = 0.01};
   health_result_t r = compute_health(&healthy);
-  ASSERT_NEAR(r.status, 0, 0.01);
+  ASSERT_NEAR((double)r.status, 0.0, 0.01);
   printf("  Healthy link: score=%.0f status=%d\n", r.health_score, r.status);
 
   telemetry_reading_t degraded = {.signal_strength = -95.0,
@@ -51,7 +51,7 @@ void test_health_scoring(void) {
                                   .doppler_shift = 2000.0,
                                   .error_rate = 15.0};
   r = compute_health(&critical);
-  ASSERT_NEAR(r.status, 2, 0.01);
+  ASSERT_NEAR((double)r.status, 2.0, 0.01);
   printf("  Critical link: score=%.0f status=%d\n", r.health_score, r.status);
 }
 
@@ -104,7 +104,7 @@ void test_anomaly_detection(void) {
   double values[] = {100, 102, 101, 99, 250, 103, 98, 300, 101, 100};
   int count = detect_anomaly_threshold(values, 10, 100.0, 5.0, 3.0);
   printf("  Anomalies detected (3-sigma): %d\n", count);
-  ASSERT_NEAR(count, 2, 0.01);
+  ASSERT_NEAR((double)count, 2.0, 0.01);
 }
 
 int main(void) {
