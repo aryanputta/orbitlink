@@ -83,6 +83,11 @@ graph TD
 git clone https://github.com/aryanputta/orbitlink.git
 cd orbitlink
 cp .env.example .env
+
+# Install Python Requirements
+pip install -r packages/ml-service/requirements.txt
+pip install -r packages/simulation/requirements.txt
+
 docker-compose up --build
 ```
 
