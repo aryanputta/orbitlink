@@ -106,7 +106,7 @@ function Dashboard() {
                     </div>
                     <div style={{ position: 'relative', paddingBottom: '40%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
                         <iframe
-                            src="https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ&autoplay=1&mute=1"
+                            src="https://www.youtube.com/embed/fO9e9jnhYK8?autoplay=1&mute=1"
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
                             allow="autoplay; encrypted-media"
                             allowFullScreen

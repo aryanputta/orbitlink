@@ -4,8 +4,8 @@ import { api } from '../services/api';
 import TelemetryChart from '../components/TelemetryChart';
 
 const LIVE_FEEDS = [
-    { name: 'NASA ISS — Live Earth View', src: 'https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ&autoplay=1&mute=1', org: 'NASA' },
-    { name: 'SpaceX — Live Channel', src: 'https://www.youtube.com/embed/live_stream?channel=UCtI0Hodo5o5dUb67FeUjDeA&autoplay=1&mute=1', org: 'SpaceX' },
+    { name: 'NASA ISS — 24/7 Live Earth View', src: 'https://www.youtube.com/embed/fO9e9jnhYK8?autoplay=1&mute=1', org: 'NASA' },
+    { name: 'SpaceX — Starlink/Starship Mission', src: 'https://www.youtube.com/embed/wbSwFU6tY1c?autoplay=1&mute=1', org: 'SpaceX' },
     { name: 'Global Starlink Tracker', src: 'https://satellitemap.space/?norbits=1', org: 'SpaceX' },
 ];
 
