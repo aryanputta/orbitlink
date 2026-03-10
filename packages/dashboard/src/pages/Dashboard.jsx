@@ -9,6 +9,8 @@ function Dashboard() {
     const { alerts } = useAlerts(10);
     const [selectedSat, setSelectedSat] = useState(null);
     const [healthData, setHealthData] = useState({});
+    const [issPos, setIssPos] = useState(null);
+    const [showLiveFeed, setShowLiveFeed] = useState(false);
     const telemetryData = useTelemetryStream(selectedSat);
 
     useEffect(() => {
@@ -31,9 +33,28 @@ function Dashboard() {
         return () => clearInterval(interval);
     }, [satellites]);
 
+    // Fetch real ISS position from Open Notify API
+    useEffect(() => {
+        const fetchISS = () => {
+            fetch('http://api.open-notify.org/iss-now.json')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.iss_position) {
+                        setIssPos({
+                            lat: parseFloat(data.iss_position.latitude),
+                            lng: parseFloat(data.iss_position.longitude),
+                        });
+                    }
+                })
+                .catch(() => { });
+        };
+        fetchISS();
+        const interval = setInterval(fetchISS, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     const latest = telemetryData.length > 0 ? telemetryData[telemetryData.length - 1] : null;
     const selectedSatObj = satellites.find(s => s.id === selectedSat);
-    const health = selectedSat ? healthData[selectedSat] : null;
 
     const healthyCount = Object.values(healthData).filter(h => h.status === 'healthy').length;
     const degradedCount = Object.values(healthData).filter(h => h.status === 'degraded').length;
@@ -41,28 +62,66 @@ function Dashboard() {
 
     return (
         <div>
-            {/* Map is the hero — takes full width */}
+            {/* Map — full width hero */}
             <div style={{ marginBottom: 16 }}>
-                <SatelliteMap onSelectSatellite={setSelectedSat} />
+                <SatelliteMap onSelectSatellite={setSelectedSat} realIssPos={issPos} />
             </div>
 
-            {/* Status bar — single row, not boxes */}
-            <div style={{ display: 'flex', gap: 24, marginBottom: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+            {/* Status bar */}
+            <div style={{ display: 'flex', gap: 24, marginBottom: 20, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span>{satellites.length} satellites tracked</span>
                 <span style={{ color: 'var(--accent-green)' }}>{healthyCount} healthy</span>
                 <span style={{ color: 'var(--accent-amber)' }}>{degradedCount} degraded</span>
                 <span style={{ color: 'var(--accent-red)' }}>{criticalCount} critical</span>
-                <span style={{ marginLeft: 'auto' }}>
-                    {selectedSatObj ? (
-                        <>Viewing: <strong style={{ color: 'var(--text-primary)' }}>{selectedSatObj.name}</strong> — {selectedSatObj.operator}</>
-                    ) : 'Select a satellite'}
+                {issPos && (
+                    <span>ISS: {issPos.lat.toFixed(2)}°, {issPos.lng.toFixed(2)}°</span>
+                )}
+                <button
+                    onClick={() => setShowLiveFeed(!showLiveFeed)}
+                    style={{
+                        marginLeft: 'auto',
+                        background: showLiveFeed ? 'rgba(248,113,113,0.1)' : 'rgba(52,211,153,0.1)',
+                        border: '1px solid ' + (showLiveFeed ? 'rgba(248,113,113,0.2)' : 'rgba(52,211,153,0.2)'),
+                        color: showLiveFeed ? 'var(--accent-red)' : 'var(--accent-green)',
+                        padding: '4px 12px',
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                    }}
+                >
+                    {showLiveFeed ? '✕ Close Feed' : '● ISS Live Feed'}
+                </button>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {selectedSatObj ? `${selectedSatObj.name} — ${selectedSatObj.operator}` : 'Select a satellite'}
                 </span>
             </div>
 
-            {/* Telemetry panel — selected satellite */}
+            {/* NASA ISS Live Feed */}
+            {showLiveFeed && (
+                <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>
+                        NASA ISS Live — Earth from Space
+                    </div>
+                    <div style={{ position: 'relative', paddingBottom: '40%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                        <iframe
+                            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1"
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                            title="NASA ISS Live Stream"
+                        />
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                        Live video from the International Space Station. During orbital night periods the screen may appear dark.
+                    </div>
+                </div>
+            )}
+
+            {/* Telemetry panel */}
             {latest && selectedSatObj && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 20 }}>
-                    {/* Left: key metrics */}
                     <div>
                         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
                             {selectedSatObj.constellation} · {selectedSatObj.altitudeKm} km
@@ -77,7 +136,7 @@ function Dashboard() {
                                 <div style={{ fontSize: 24, fontWeight: 600 }}>{latest.latency?.toFixed(0)} <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>ms</span></div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Loss</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Packet Loss</div>
                                 <div style={{ fontSize: 24, fontWeight: 600 }}>{latest.packet_loss?.toFixed(2)}<span style={{ fontSize: 11, color: 'var(--text-muted)' }}>%</span></div>
                             </div>
                             <div>
@@ -109,7 +168,6 @@ function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Right: charts */}
                     <div>
                         <div style={{ marginBottom: 12 }}>
                             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Signal & Latency</div>
@@ -123,7 +181,7 @@ function Dashboard() {
                 </div>
             )}
 
-            {/* Alerts — simple list, no box */}
+            {/* Alerts */}
             {alerts.length > 0 && (
                 <div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Recent Alerts</div>

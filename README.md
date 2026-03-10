@@ -1,8 +1,20 @@
-# OrbitLink
+# OrbitalOps
 
 Production-grade satellite network operations platform. Real-time telemetry streaming, predictive link failure detection, automated traffic rerouting, and mission control visualization.
 
 Built with a polyglot microservices architecture — Java, Python, C, C++, JavaScript.
+
+---
+
+## The Problem
+
+Satellite communication networks generate massive volumes of telemetry data across distributed orbital nodes. Operators currently lack the tools to monitor link quality in real time, detect degradation before it causes outages, and respond to connectivity failures across constellations spanning multiple orbits.
+
+OrbitalOps addresses this by creating a platform that collects, analyzes, and visualizes satellite communication telemetry in real time so operators can detect issues earlier and respond faster.
+
+The platform helps by ingesting live telemetry metrics such as latency, packet loss, and bandwidth; aggregating telemetry from multiple orbital nodes; analyzing link quality trends to detect degradation; generating automated alerts when connectivity issues emerge; and providing a real-time dashboard for network situational awareness.
+
+This allows operators to identify failing links earlier, monitor network performance continuously, and maintain more reliable satellite communication across constellations operated by SpaceX (Starlink), Lockheed Martin (GPS III, SBIRS, MUOS), NASA (GOES, TDRS, Landsat), and ESA (Sentinel).
 
 ---
 
@@ -17,8 +29,8 @@ graph TD
     TP --> PG["PostgreSQL · TimescaleDB"]
     TP --> R["Redis Cache"]
     TP --> WS["WebSocket Push"]
-    K --> ML["ML Prediction<br/>Python · XGBoost"]
-    ML --> AD["Anomaly Detection<br/>Isolation Forest"]
+    K --> OP["OrbitalOps Predicts<br/>Python · XGBoost"]
+    OP --> AD["Anomaly Detection<br/>Isolation Forest"]
     AD --> AE["Alert Engine"]
     AE --> IR["Incident Response<br/>Dijkstra Rerouting"]
     API --> SP["Signal Processing<br/>C/C++ · FFT · Link Budget"]
@@ -36,7 +48,7 @@ graph TD
 | Streaming | Apache Kafka |
 | Database | PostgreSQL, TimescaleDB |
 | Cache | Redis |
-| ML Service | Python, FastAPI, XGBoost, scikit-learn |
+| OrbitalOps Predicts | Python, FastAPI, XGBoost, scikit-learn |
 | Simulation | Python, SGP4 |
 | Signal Processing | C, C++ |
 | Dashboard | React, Recharts, Leaflet |
@@ -50,13 +62,17 @@ graph TD
 
 **Telemetry Pipeline** — Kafka-backed ingestion with consumer groups for horizontal scaling. Redis caching for sub-millisecond latest-state lookups. WebSocket STOMP push to the dashboard.
 
-**AI-Driven Prediction** — XGBoost link failure classifier and Isolation Forest anomaly detector trained on synthetic physics-based signal data. Batch prediction endpoint for fleet-wide assessment.
+**OrbitalOps Predicts** — XGBoost link failure classifier and Isolation Forest anomaly detector trained on synthetic physics-based signal data. Batch prediction endpoint for fleet-wide assessment.
 
 **Orbital Simulation** — SGP4 propagation using real NORAD TLE data. ECI-to-geodetic coordinate conversion, ground station visibility, free-space path loss, atmospheric attenuation, and Doppler modeling. Six failure scenarios for stress testing.
 
 **Signal Processing (C/C++)** — Health scoring, Friis path loss, Doppler shift, link budget analysis, BER computation for M-QAM, Cooley-Tukey FFT, sigma-threshold anomaly detection, moving average and exponential smoothing filters. Thread-safe C++ ring buffer and trend analysis with linear regression.
 
+**5G NTN Integration** — Non-terrestrial network link budget analysis, SNR monitoring, bit error rate computation, and adaptive modulation support for satellite-to-ground 5G connectivity.
+
 **Automated Incident Response** — Rule-based anomaly triggers, Dijkstra-style graph routing for traffic rerouting, incident lifecycle management, resolution time tracking, and SLA compliance reporting.
+
+**Live ISS Feed** — Embedded NASA live stream from the International Space Station with real-time ISS position tracking via Open Notify API.
 
 **Mission Control Dashboard** — Dark-theme operator console with interactive satellite map, live telemetry charts, fleet health overview, alert management, and one-click incident rerouting.
 
@@ -67,12 +83,12 @@ graph TD
 ## Project Structure
 
 ```
-orbitlink/
+orbitalops/
 ├── packages/
 │   ├── api/                    Java Spring Boot backend
 │   ├── dashboard/              React frontend
 │   ├── simulation/             Python orbital simulation
-│   ├── ml-service/             Python ML prediction service
+│   ├── ml-service/             OrbitalOps Predicts (Python)
 │   ├── signal-processing/      C/C++ signal processing library
 │   ├── edge-node/              Python edge telemetry preprocessor
 │   └── chaos/                  Chaos engineering runner
@@ -120,7 +136,7 @@ pip install -r requirements.txt
 python -m src.main
 ```
 
-### ML Service
+### OrbitalOps Predicts
 
 ```bash
 cd packages/ml-service
@@ -129,28 +145,6 @@ uvicorn src.main:app --port 5000
 ```
 
 ---
-
-## API
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register operator |
-| POST | `/api/v1/auth/login` | Login, returns JWT |
-| POST | `/api/v1/telemetry/ingest` | Ingest telemetry via Kafka |
-| POST | `/api/v1/telemetry/ingest/batch` | Batch ingest |
-| GET | `/api/v1/telemetry/{satId}/latest` | Latest reading (cached) |
-| GET | `/api/v1/telemetry/{satId}` | Historical readings |
-| GET | `/api/v1/satellites` | List satellites |
-| GET | `/api/v1/satellites/{id}/health` | Real-time health score |
-| GET | `/api/v1/alerts` | Active alerts |
-| POST | `/api/v1/alerts/{id}/acknowledge` | Acknowledge alert |
-| GET | `/api/v1/incidents` | Incident history |
-| POST | `/api/v1/incidents/{id}/resolve` | Resolve incident |
-| POST | `/api/v1/incidents/{id}/reroute` | Trigger traffic reroute |
-| GET | `/api/v1/stations` | Ground station network |
-| GET | `/api/v1/reports/sla` | SLA compliance report |
-| POST | `/predict` | Link failure prediction |
-| POST | `/predict/batch` | Fleet-wide prediction |
 
 ---
 

@@ -11,7 +11,7 @@ function App() {
                 <nav className="topnav">
                     <div className="topnav-brand">
                         <div className="live-dot" />
-                        <span>OrbitLink</span>
+                        <span>OrbitalOps</span>
                     </div>
                     <div className="topnav-links">
                         <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>

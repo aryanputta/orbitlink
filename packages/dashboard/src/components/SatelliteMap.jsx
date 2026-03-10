@@ -21,10 +21,11 @@ function computePosition(sat, t) {
     };
 }
 
-function SatelliteMap({ onSelectSatellite }) {
+function SatelliteMap({ onSelectSatellite, realIssPos }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const satMarkersRef = useRef({});
+    const issMarkerRef = useRef(null);
     const [fullscreen, setFullscreen] = useState(false);
     const [sats, setSats] = useState([]);
     const stations = useStations();
@@ -60,6 +61,7 @@ function SatelliteMap({ onSelectSatellite }) {
         }
     }, [fullscreen]);
 
+    // Ground stations
     useEffect(() => {
         if (!mapInstanceRef.current || stations.length === 0) return;
         stations.forEach(station => {
@@ -71,15 +73,12 @@ function SatelliteMap({ onSelectSatellite }) {
                 opacity: 0.8,
                 fillOpacity: 0.5,
             })
-                .bindTooltip(station.name, {
-                    permanent: false,
-                    direction: 'right',
-                    offset: [6, 0],
-                })
+                .bindTooltip(station.name, { permanent: false, direction: 'right', offset: [6, 0] })
                 .addTo(mapInstanceRef.current);
         });
     }, [stations]);
 
+    // Simulated satellite positions
     useEffect(() => {
         if (!mapInstanceRef.current || sats.length === 0) return;
         const update = () => {
@@ -108,12 +107,35 @@ function SatelliteMap({ onSelectSatellite }) {
         return () => clearInterval(interval);
     }, [sats, onSelectSatellite]);
 
+    // Real ISS position from Open Notify API
+    useEffect(() => {
+        if (!mapInstanceRef.current || !realIssPos) return;
+        if (issMarkerRef.current) {
+            issMarkerRef.current.setLatLng([realIssPos.lat, realIssPos.lng]);
+        } else {
+            const icon = L.divIcon({
+                className: '',
+                html: `<div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;box-shadow:0 0 12px #f59e0b;border:2px solid #fff"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+            });
+            issMarkerRef.current = L.marker([realIssPos.lat, realIssPos.lng], { icon })
+                .bindTooltip('ISS (Live)', { permanent: true, direction: 'top', offset: [0, -8] })
+                .addTo(mapInstanceRef.current);
+        }
+    }, [realIssPos]);
+
     return (
         <div style={{ position: 'relative' }}>
             <div ref={mapRef} className={`map-container${fullscreen ? ' fullscreen' : ''}`} />
             <button className="map-expand-btn" onClick={() => setFullscreen(f => !f)}>
                 {fullscreen ? '✕ Close' : '⤢ Expand'}
             </button>
+            {fullscreen && (
+                <div style={{ position: 'fixed', bottom: 20, left: 20, zIndex: 10000, fontSize: 11, color: 'rgba(255,255,255,0.7)', background: 'rgba(0,0,0,0.6)', padding: '6px 12px', borderRadius: 8 }}>
+                    <span style={{ color: '#34d399' }}>●</span> Simulated · <span style={{ color: '#f59e0b' }}>●</span> ISS Live · <span style={{ color: '#4a9eff' }}>●</span> Ground Station
+                </div>
+            )}
         </div>
     );
 }
