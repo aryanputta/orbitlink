@@ -96,27 +96,57 @@ const alerts = [];
 let alertCounter = 0;
 
 setInterval(() => {
-    if (Math.random() < 0.15) {
-        const sat = SATELLITES[Math.floor(Math.random() * SATELLITES.length)];
-        const types = [
-            { type: 'packet_loss_anomaly', severity: 'WARNING', msg: `Elevated packet loss on ${sat.name}` },
-            { type: 'latency_spike', severity: 'CRITICAL', msg: `Latency spike detected on ${sat.name} (${sat.constellation})` },
-            { type: 'signal_degradation', severity: 'WARNING', msg: `Signal degradation on ${sat.name}` },
-            { type: 'link_failure_prediction', severity: 'CRITICAL', msg: `ML model predicts link failure on ${sat.name} within 60s` },
-            { type: 'doppler_drift', severity: 'WARNING', msg: `Abnormal Doppler drift on ${sat.name}` },
-            { type: 'handoff_required', severity: 'WARNING', msg: `Ground station handoff required for ${sat.name}` },
-        ];
-        const pick = types[Math.floor(Math.random() * types.length)];
-        alerts.unshift({
-            id: `alert-${++alertCounter}`,
-            satellite_id: sat.id,
-            satellite_name: sat.name,
-            ...pick,
-            acknowledged: false,
-            created_at: new Date().toISOString(),
-        });
-        if (alerts.length > 100) alerts.pop();
-    }
+    SATELLITES.forEach(sat => {
+        const history = telemetryHistory[sat.id];
+        if (!history || history.length < 3) return;
+        const latest = history[history.length - 1];
+        const prev = history[history.length - 3];
+
+        // Compute metrics
+        const packetsSent = 1000;
+        const packetsLost = Math.round(latest.packet_loss * 10);
+        const lossPercent = (packetsLost / packetsSent * 100).toFixed(1);
+        const bwUtil = ((latest.bandwidth / (satState[sat.id].bandwidthBase + 40)) * 100).toFixed(1);
+        const latencyTrend = latest.latency - prev.latency;
+        const signalTrend = latest.signal_strength - prev.signal_strength;
+
+        // Threshold checks
+        if (latest.packet_loss > 3.5 && Math.random() < 0.3) {
+            alerts.unshift({
+                id: `alert-${++alertCounter}`, satellite_id: sat.id, satellite_name: sat.name,
+                type: 'packet_loss_anomaly', severity: 'WARNING',
+                msg: `Packet loss at ${lossPercent}% on ${sat.name} (${packetsLost}/${packetsSent} packets lost)`,
+                metrics: { packets_sent: packetsSent, packets_lost: packetsLost, loss_percent: lossPercent, signal: latest.signal_strength, latency: latest.latency },
+                acknowledged: false, created_at: new Date().toISOString(),
+            });
+        } else if (latest.latency > 200 && latencyTrend > 10 && Math.random() < 0.25) {
+            alerts.unshift({
+                id: `alert-${++alertCounter}`, satellite_id: sat.id, satellite_name: sat.name,
+                type: 'latency_spike', severity: 'CRITICAL',
+                msg: `Latency ${latest.latency.toFixed(0)}ms on ${sat.name} (↑${latencyTrend.toFixed(0)}ms trend)`,
+                metrics: { latency: latest.latency, latency_trend: latencyTrend, jitter: latest.jitter, signal: latest.signal_strength },
+                acknowledged: false, created_at: new Date().toISOString(),
+            });
+        } else if (latest.signal_strength < -90 && signalTrend < -2 && Math.random() < 0.2) {
+            alerts.unshift({
+                id: `alert-${++alertCounter}`, satellite_id: sat.id, satellite_name: sat.name,
+                type: 'signal_degradation', severity: 'WARNING',
+                msg: `Signal ${latest.signal_strength.toFixed(1)} dBm on ${sat.name} (↓${Math.abs(signalTrend).toFixed(1)} dBm)`,
+                metrics: { signal: latest.signal_strength, signal_trend: signalTrend, snr: latest.snr, bandwidth: latest.bandwidth },
+                acknowledged: false, created_at: new Date().toISOString(),
+            });
+        } else if (latest.health_score < 60 && Math.random() < 0.15) {
+            const prob = (0.7 + Math.random() * 0.25).toFixed(2);
+            alerts.unshift({
+                id: `alert-${++alertCounter}`, satellite_id: sat.id, satellite_name: sat.name,
+                type: 'link_failure_prediction', severity: 'CRITICAL',
+                msg: `OrbitalOps predicts link failure on ${sat.name} (P=${prob})`,
+                metrics: { degradation_probability: parseFloat(prob), health_score: latest.health_score, signal: latest.signal_strength, latency: latest.latency, packet_loss: latest.packet_loss },
+                acknowledged: false, created_at: new Date().toISOString(),
+            });
+        }
+    });
+    if (alerts.length > 100) alerts.length = 100;
 }, 3000);
 
 const incidents = [];
