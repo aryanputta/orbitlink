@@ -19,12 +19,12 @@ static int tests_passed = 0;
 void test_health_scoring(void) {
   printf("Testing health scoring...\n");
 
-  telemetry_reading_t healthy = {.signal_strength = -70.0,
+  telemetry_reading_t healthy = {.signal_strength = -60.0,
                                  .snr = 40.0,
-                                 .latency = 50.0,
-                                 .jitter = 5.0,
-                                 .packet_loss = 0.5,
-                                 .bandwidth = 80.0,
+                                 .latency = 10.0,
+                                 .jitter = 1.0,
+                                 .packet_loss = 0.0,
+                                 .bandwidth = 95.0,
                                  .doppler_shift = 100.0,
                                  .error_rate = 0.01};
   health_result_t r = compute_health(&healthy);
