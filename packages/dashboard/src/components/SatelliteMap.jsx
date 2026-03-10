@@ -44,8 +44,9 @@ function SatelliteMap({ onSelectSatellite, realIssPos }) {
             minZoom: 2,
             maxZoom: 12,
         });
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 18,
+            attribution: '&copy; CartoDB'
         }).addTo(mapInstanceRef.current);
         return () => {
             if (mapInstanceRef.current) {
