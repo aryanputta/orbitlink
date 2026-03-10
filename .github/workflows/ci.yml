@@ -1,0 +1,120 @@
+name: OrbitLink CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api:
+    name: Java API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_DB: orbitlink_test
+          POSTGRES_USER: orbitlink
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U orbitlink"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build and Test
+        run: cd packages/api && mvn -B verify
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: orbitlink_test
+          POSTGRES_USER: orbitlink
+          POSTGRES_PASSWORD: testpass
+          JWT_SECRET: ci-test-secret
+          SEED_PASSWORD: ci-test-pass
+
+  dashboard:
+    name: Dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: cd packages/dashboard && npm ci
+
+      - name: Build
+        run: cd packages/dashboard && npm run build
+
+  signal-processing:
+    name: C/C++ Signal Processing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cd packages/signal-processing
+          mkdir build && cd build
+          cmake ..
+          make
+
+      - name: Test
+        run: cd packages/signal-processing/build && ./signal_test
+
+  python-services:
+    name: Python Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Simulation
+        run: pip install -r packages/simulation/requirements.txt
+
+      - name: Install ML Service
+        run: pip install -r packages/ml-service/requirements.txt
+
+      - name: Verify imports
+        run: |
+          cd packages/simulation && python -c "from src.orbital import propagate_tle; print('simulation OK')"
+          cd ../ml-service && python -c "from src.predict import LinkPredictor; print('ml-service OK')"
+
+  docker:
+    name: Docker Build
+    needs: [api, dashboard, signal-processing, python-services]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API
+        run: docker build -t orbitlink-api ./packages/api
+
+      - name: Build Dashboard
+        run: docker build -t orbitlink-dashboard ./packages/dashboard
+
+      - name: Build Simulation
+        run: docker build -t orbitlink-simulation ./packages/simulation
+
+      - name: Build ML Service
+        run: docker build -t orbitlink-ml ./packages/ml-service
+
+      - name: Verify Compose
+        run: docker compose config --quiet

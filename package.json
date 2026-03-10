@@ -1,0 +1,19 @@
+{
+    "name": "orbitlink",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Satellite Network Operations Platform",
+    "workspaces": [
+        "packages/dashboard"
+    ],
+    "scripts": {
+        "dashboard": "cd packages/dashboard && npm run dev",
+        "build:dashboard": "cd packages/dashboard && npm run build",
+        "build:signal": "cd packages/signal-processing && mkdir -p build && cd build && cmake .. && make",
+        "test:signal": "cd packages/signal-processing/build && ./signal_test",
+        "simulation": "cd packages/simulation && python -m src.main",
+        "ml-service": "cd packages/ml-service && uvicorn src.main:app --port 5000",
+        "up": "docker-compose up --build",
+        "down": "docker-compose down"
+    }
+}
